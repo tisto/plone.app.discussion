@@ -31,6 +31,10 @@ def add_to_tmpstorage(obj):
     copy_comments(obj, getSite())
 
 
+def attach_comments_to(obj):
+    copy_comments(getSite(), obj)
+
+
 class TestTmpstorage(unittest.TestCase):
 
     layer = PLONE_APP_DISCUSSION_INTEGRATION_TESTING
@@ -76,6 +80,20 @@ class TestTmpstorage(unittest.TestCase):
         add_to_tmpstorage(self.portal.doc1)
 
         conversation = IConversation(self.portal)
+        self.assertEqual(len(conversation), 1)
+
+        self.assertEqual(
+            conversation.getComments().next().text,
+            'Comment text'
+        )
+
+    def test_attach_comments_to(self):
+        self.typetool.constructContent('Document', self.portal, 'doc2')
+
+        add_to_tmpstorage(self.portal.doc1)
+        attach_comments_to(self.portal.doc2)
+
+        conversation = IConversation(self.portal.doc2)
         self.assertEqual(len(conversation), 1)
 
         self.assertEqual(
