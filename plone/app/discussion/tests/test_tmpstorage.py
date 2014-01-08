@@ -27,12 +27,20 @@ def copy_comments(source_object, target_object):
         target_conversation.addComment(comment)
 
 
-def add_to_tmpstorage(obj):
+def push_to_tmpstorage(obj):
     copy_comments(obj, getSite())
 
 
-def attach_comments_to(obj):
+def remove_comments(obj):
+    conversation = IConversation(obj)
+    # XXX: conversation.getComments does not work here. Needs to be inv.
+    for comment in conversation.getThreads():
+        del conversation[comment['id']]
+
+
+def pop_from_tmpstorage(obj):
     copy_comments(getSite(), obj)
+    remove_comments(getSite())
 
 
 class TestTmpstorage(unittest.TestCase):
@@ -45,9 +53,8 @@ class TestTmpstorage(unittest.TestCase):
         interface.alsoProvides(
             self.portal.REQUEST, interfaces.IDiscussionLayer)
 
-        typetool = self.portal.portal_types
-        typetool.constructContent('Document', self.portal, 'doc1')
-        self.typetool = typetool
+        self.portal.invokeFactory('Document', 'doc1')
+        self.portal.invokeFactory('Document', 'doc2')
         self.portal_discussion = getToolByName(
             self.portal,
             'portal_discussion',
@@ -64,8 +71,6 @@ class TestTmpstorage(unittest.TestCase):
         conversation.addComment(comment)
 
     def test_copy_comments(self):
-        self.typetool.constructContent('Document', self.portal, 'doc2')
-
         copy_comments(self.portal.doc1, self.portal.doc2)
 
         conversation = IConversation(self.portal.doc2)
@@ -76,8 +81,7 @@ class TestTmpstorage(unittest.TestCase):
         )
 
     def test_create_tmpstorage(self):
-
-        add_to_tmpstorage(self.portal.doc1)
+        push_to_tmpstorage(self.portal.doc1)
 
         conversation = IConversation(self.portal)
         self.assertEqual(len(conversation), 1)
@@ -87,11 +91,9 @@ class TestTmpstorage(unittest.TestCase):
             'Comment text'
         )
 
-    def test_attach_comments_to(self):
-        self.typetool.constructContent('Document', self.portal, 'doc2')
-
-        add_to_tmpstorage(self.portal.doc1)
-        attach_comments_to(self.portal.doc2)
+    def test_pop_from_tmpstorage(self):
+        push_to_tmpstorage(self.portal.doc1)
+        pop_from_tmpstorage(self.portal.doc2)
 
         conversation = IConversation(self.portal.doc2)
         self.assertEqual(len(conversation), 1)
@@ -100,3 +102,10 @@ class TestTmpstorage(unittest.TestCase):
             conversation.getComments().next().text,
             'Comment text'
         )
+
+    def test_pop_from_tmpstorage_clears_portal(self):
+        push_to_tmpstorage(self.portal.doc1)
+        pop_from_tmpstorage(self.portal.doc2)
+
+        conversation = IConversation(self.portal)
+        self.assertEqual(len(conversation), 0)
