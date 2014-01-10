@@ -8,6 +8,20 @@
 
     <include file="captcha.zcml" />
 
+    <browser:page
+        for="*"
+        name="pop-from-tmpstorage"
+        class=".tmpstorage.PopFromTmpstorage"
+        permission="cmf.ManagePortal"
+        />
+
+    <browser:page
+        for="*"
+        name="push-to-tmpstorage"
+        class=".tmpstorage.PushToTmpstorage"
+        permission="cmf.ManagePortal"
+        />
+
     <!-- Traversal adapter -->
     <adapter factory=".traversal.ConversationNamespace" name="conversation" />
 
