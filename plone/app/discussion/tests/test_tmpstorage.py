@@ -27,15 +27,15 @@ def copy_comments(source_object, target_object):
         target_conversation.addComment(comment)
 
 
-def push_to_tmpstorage(obj):
-    copy_comments(obj, getSite())
-
-
 def remove_comments(obj):
     conversation = IConversation(obj)
     # XXX: conversation.getComments does not work here. Needs to be inv.
     for comment in conversation.getThreads():
         del conversation[comment['id']]
+
+
+def push_to_tmpstorage(obj):
+    copy_comments(obj, getSite())
 
 
 def pop_from_tmpstorage(obj):
