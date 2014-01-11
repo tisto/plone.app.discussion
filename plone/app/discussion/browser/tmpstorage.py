@@ -1,48 +1,31 @@
 # -*- coding: utf-8 -*-
-import unittest2 as unittest
+from Products.Five.browser import BrowserView
+from plone.app.discussion.interfaces import IConversation
 from zope.component.hooks import getSite
 
-from zope import interface
 
-from zope.component import createObject, queryUtility
-
-from plone.registry.interfaces import IRegistry
-
-from Products.CMFCore.utils import getToolByName
-
-from plone.app.discussion import interfaces
-from plone.app.discussion.interfaces import IConversation
-from plone.app.discussion.interfaces import IDiscussionSettings
-from Products.Five.browser import BrowserView
-
-
-def copy_comments(source_object, target_object):
-    source_conversation = IConversation(source_object)
-    target_conversation = IConversation(target_object)
-    for thread_item in source_conversation.getThreads():
-        comment = thread_item['comment']
-        comment.unindexObject()
-        target_conversation.addComment(comment)
-
-
-def remove_comments(obj):
-    conversation = IConversation(obj)
-    # XXX: conversation.getComments does not work here. Needs to be inv.
-    for thread_item in conversation.getThreads():
-        try:
-            del conversation[thread_item['comment'].id]
-        except:
-            import pdb; pdb.set_trace()
+ANNOTATION_KEY = 'plone.app.discussion:conversation'
 
 
 def push_to_tmpstorage(obj):
-    #remove_comments(getSite())
-    copy_comments(obj, getSite())
+    from zope.annotation.interfaces import IAnnotations
+    portal = getSite()
+    IConversation(obj).__parent__ = portal
+    annotations = IAnnotations(portal)
+    annotations[ANNOTATION_KEY] = IConversation(obj)
+    #
+    source_ann = IAnnotations(obj)
+    del source_ann[ANNOTATION_KEY]
 
 
 def pop_from_tmpstorage(obj):
-    copy_comments(getSite(), obj)
-    #remove_comments(getSite())
+    from zope.annotation.interfaces import IAnnotations
+    annotations = IAnnotations(obj)
+    annotations[ANNOTATION_KEY] = IConversation(getSite())
+    IConversation(obj).__parent__ = obj
+
+    portal_ann = IAnnotations(getSite())
+    del portal_ann[ANNOTATION_KEY]
 
 
 class PopFromTmpstorage(BrowserView):
