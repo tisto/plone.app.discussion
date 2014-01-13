@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import unittest2 as unittest
-from zope.component.hooks import getSite
 
 from zope import interface
 
@@ -18,29 +17,8 @@ from plone.app.discussion.testing import (
     PLONE_APP_DISCUSSION_INTEGRATION_TESTING
 )
 from plone.app.discussion.interfaces import IDiscussionSettings
-
-
-def copy_comments(source_object, target_object):
-    source_conversation = IConversation(source_object)
-    target_conversation = IConversation(target_object)
-    for comment in source_conversation.getComments():
-        target_conversation.addComment(comment)
-
-
-def remove_comments(obj):
-    conversation = IConversation(obj)
-    # XXX: conversation.getComments does not work here. Needs to be inv.
-    for comment in conversation.getThreads():
-        del conversation[comment['id']]
-
-
-def push_to_tmpstorage(obj):
-    copy_comments(obj, getSite())
-
-
-def pop_from_tmpstorage(obj):
-    copy_comments(getSite(), obj)
-    remove_comments(getSite())
+from plone.app.discussion.browser.tmpstorage import push_to_tmpstorage
+from plone.app.discussion.browser.tmpstorage import pop_from_tmpstorage
 
 
 class TestTmpstorage(unittest.TestCase):
@@ -70,17 +48,7 @@ class TestTmpstorage(unittest.TestCase):
         comment.text = 'Comment text'
         conversation.addComment(comment)
 
-    def test_copy_comments(self):
-        copy_comments(self.portal.doc1, self.portal.doc2)
-
-        conversation = IConversation(self.portal.doc2)
-        self.assertEqual(len(conversation), 1)
-        self.assertEqual(
-            conversation.getComments().next().text,
-            'Comment text'
-        )
-
-    def test_create_tmpstorage(self):
+    def test_push_to_tmpstorage(self):
         push_to_tmpstorage(self.portal.doc1)
 
         conversation = IConversation(self.portal)
